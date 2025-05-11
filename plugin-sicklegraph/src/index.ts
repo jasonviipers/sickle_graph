@@ -1,20 +1,19 @@
+import { z } from 'zod';
 import type { Plugin } from '@elizaos/core';
 import { type GenerateTextParams, ModelType, logger } from '@elizaos/core';
 import { configSchema } from './environment';
-import { z } from 'zod';
-import { SickleGraphService } from './service/SickleGraphService';
-import { knowledgeGraphQueryAction } from './actions/knowledgeGraphQueryAction';
-import { elizaResearchAssistantAction } from './actions/elizaResearchAssistantAction';
-import { inferenceEngineAction } from './actions/inferenceEngineAction';
-import { knowledgeGraphProvider } from './provider/knowledgeGraphProvider';
+import { elizaResearchAssistantAction } from './actions/elizaResearch-assistant-action';
+import { knowledgeGraphQueryAction } from './actions/knowledge-graphquery-action';
+import { inferenceEngineAction } from './actions/inference-engine-action';
+import { knowledgeGraphProvider } from './provider/knowledge-graph-provider';
+import { SickleGraphService } from './service';
 
-const sickleGraphPlugin = {
+const sickleGraphPlugin: Plugin = {
   name: "plugin-sicklegraph",
   description: "SickleGraph: AI-powered knowledge graph for gene therapy innovation in Africa",
   config: {
     KNOWLEDGE_GRAPH_DB_URL: process.env.KNOWLEDGE_GRAPH_DB_URL,
     KNOWLEDGE_GRAPH_DB_TYPE: process.env.KNOWLEDGE_GRAPH_DB_TYPE,
-    API_KEY: process.env.API_KEY
   },
   async init(config) {
     logger.info("*** Initializing SickleGraph Plugin ***");
@@ -120,7 +119,10 @@ const sickleGraphPlugin = {
     ]
   },
   services: [SickleGraphService],
-  actions: [knowledgeGraphQueryAction, elizaResearchAssistantAction, inferenceEngineAction],
+  actions: [
+    knowledgeGraphQueryAction,
+    elizaResearchAssistantAction,
+    inferenceEngineAction],
   providers: [knowledgeGraphProvider]
 };
 

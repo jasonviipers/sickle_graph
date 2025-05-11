@@ -1,6 +1,6 @@
 import type { Content, IAgentRuntime, Memory, State, TestSuite, UUID } from '@elizaos/core';
 import { v4 as uuidv4 } from 'uuid';
-import { character } from './index';
+import { character } from './character/sicklegraph-agent';
 
 export class StarterTestSuite implements TestSuite {
   name = 'starter';

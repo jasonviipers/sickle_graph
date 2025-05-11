@@ -1,6 +1,5 @@
 import { type IAgentRuntime, Service, logger } from '@elizaos/core';
 
-
 export class SickleGraphService extends Service {
     constructor(protected runtime: IAgentRuntime) {
         super(runtime);
