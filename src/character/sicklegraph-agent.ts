@@ -1,4 +1,4 @@
-import { type Character, } from '@elizaos/core';
+import { type IAgentRuntime, logger, type Character, } from '@elizaos/core';
 
 export const character: Character = {
     name: "Dr. Amina",
@@ -113,4 +113,9 @@ export const character: Character = {
         ]
     },
 
-}
+};
+
+export const initCharacter = ({ runtime }: { runtime: IAgentRuntime }) => {
+    logger.info('Initializing character');
+    logger.info('Name: ', character.name);
+};

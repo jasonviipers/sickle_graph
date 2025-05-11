@@ -9,7 +9,6 @@ import { z } from 'zod';
 export const configSchema = z.object({
   KNOWLEDGE_GRAPH_DB_URL: z.string().min(1, "Knowledge Graph Database URL is required").optional(),
   KNOWLEDGE_GRAPH_DB_TYPE: z.enum(["kuzu", "neo4j"]).optional().default("kuzu"),
-  API_KEY: z.string().min(1, "API key is required").optional(),
 });
 
 export const config = configSchema.parse(process.env);
