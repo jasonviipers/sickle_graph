@@ -5,7 +5,7 @@ export const character: Character = {
     plugins: [
         '@elizaos/plugin-sql',
         ...(process.env.OPENAI_API_KEY ? ['@elizaos/plugin-openai'] : []),
-        // ...(process.env.ANTHROPIC_API_KEY ? ['@elizaos/plugin-anthropic'] : []),
+        ...(process.env.ANTHROPIC_API_KEY ? ['@elizaos/plugin-anthropic'] : []),
         ...(!process.env.OPENAI_API_KEY && !process.env.ANTHROPIC_API_KEY
             ? ['@elizaos/plugin-local-ai']
             : [])
