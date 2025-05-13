@@ -32,8 +32,11 @@
     "@elizaos/core": "beta",
     "@elizaos/plugin-bootstrap": "^1.0.0-beta.49",
     "@elizaos/plugin-elevenlabs": "^1.0.0-beta.48",
+    "@elizaos/plugin-groq": "beta",
+    "@elizaos/plugin-local-ai": "^1.0.0-beta.49",
     "@elizaos/plugin-openai": "beta",
     "@elizaos/plugin-sql": "beta",
+    "kuzu": "^0.10.0",
     "zod": "3.24.2"
   },
   "devDependencies": {

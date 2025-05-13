@@ -1,7 +1,7 @@
 import { Action, HandlerCallback, IAgentRuntime, logger, Memory, State } from "@elizaos/core";
 
 
-export const elizaResearchAssistantAction: Action = {
+export const AssistantAction: Action = {
     name: "ELIZA_RESEARCH_ASSISTANT",
     similes: ["ASK_ELIZA", "RESEARCH_QUERY"],
     description: "Queries the ELIZA AI Research Assistant for biomedical research information",
