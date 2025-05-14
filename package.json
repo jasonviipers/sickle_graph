@@ -36,7 +36,8 @@
     "@elizaos/plugin-local-ai": "^1.0.0-beta.49",
     "@elizaos/plugin-openai": "beta",
     "@elizaos/plugin-sql": "beta",
-    "kuzu-wasm": "^0.10.0",
+    "@kuzu/kuzu-wasm": "^0.7.0",
+    "kuzu": "^0.10.0",
     "zod": "3.24.2"
   },
   "devDependencies": {

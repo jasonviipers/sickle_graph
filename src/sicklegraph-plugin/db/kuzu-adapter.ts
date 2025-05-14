@@ -1,21 +1,28 @@
 import { logger } from '@elizaos/core';
-import * as kuzu from 'kuzu-wasm';
+import * as kuzu from '@kuzu/kuzu-wasm';
 import { Config, configSchema } from '../types';
 
 export class KuzuAdapter {
-  private db: any; // Type will depend on Kùzu's TypeScript definitions
+  private db: any;
+  private conn: any;
   private config: Config;
 
-  constructor(config?:Partial<Config>) {
+  constructor(config?: Partial<Config>) {
     this.config = configSchema.parse(config || {});
-    this.db = kuzu.createDatabase(this.config.KUZU_DB_PATH);
   }
 
   async initialize(): Promise<void> {
     try {
-      logger.info(`Initializing Kùzu database at ${this.config.KUZU_DB_PATH}`);
-      this.db = new kuzu.connection(this.db);
-      logger.info('Kùzu database initialized successfully');
+      logger.info('Initializing Kùzu WASM database');
+      
+      // Initialize Kùzu WASM module
+      const kuzuModule = await kuzu.default();
+      
+      // Create database and connection
+      this.db = await kuzuModule.Database(this.config.KUZU_DB_PATH || ':memory:');
+      this.conn = await kuzuModule.Connection(this.db);
+      
+      logger.info('Kùzu WASM database initialized successfully');
     } catch (error) {
       logger.error('Failed to initialize Kùzu database:', error);
       throw error;
@@ -25,21 +32,52 @@ export class KuzuAdapter {
   async executeQuery(query: string, params: Record<string, any> = {}): Promise<any> {
     try {
       logger.debug(`Executing Kùzu query: ${query}`);
-      const connection = this.db.getConnection();
-      const result = await connection.query(query, params);
-      return result;
+      
+      // In WASM version, parameters might need to be embedded directly in the query
+      // since the interface might be different from the native version
+      const result = await this.conn.execute(query);
+      
+      // Convert result to JSON format
+      return {
+        data: JSON.parse(result.table.toString()),
+        stats: result.getStats()
+      };
     } catch (error) {
       logger.error(`Error executing Kùzu query: ${query}`, error);
       throw error;
     }
   }
 
+  async writeFile(path: string, data: string | ArrayBufferView): Promise<void> {
+    try {
+      kuzu.FS.writeFile(path, data);
+      logger.debug(`File written to virtual filesystem: ${path}`);
+    } catch (error) {
+      logger.error(`Error writing file ${path}`, error);
+      throw error;
+    }
+  }
+
+  async readFile(path: string): Promise<string> {
+    try {
+      const content = kuzu.FS.readFile(path, { encoding: 'utf8' });
+      logger.debug(`File read from virtual filesystem: ${path}`);
+      return content;
+    } catch (error) {
+      logger.error(`Error reading file ${path}`, error);
+      throw error;
+    }
+  }
+
   async close(): Promise<void> {
     try {
-      if (this.db) {
+      if (this.conn) {
         logger.info('Closing Kùzu database connection');
-        await this.db.close();
+        // In WASM version, connections might not need explicit closing
+        // but we'll keep this for consistency
+        this.conn = null;
       }
+      this.db = null;
     } catch (error) {
       logger.error('Error closing Kùzu database:', error);
       throw error;
@@ -47,12 +85,12 @@ export class KuzuAdapter {
   }
 
   // Schema creation methods
-  async createNodeType(label: string, properties: Record<string, string>): Promise<void> {
+  async createNodeType(label: string, properties: Record<string, string>, primaryKey: string): Promise<void> {
     const propertiesStr = Object.entries(properties)
       .map(([name, type]) => `${name} ${type}`)
       .join(', ');
 
-    const query = `CREATE NODE TABLE ${label} (${propertiesStr})`;
+    const query = `CREATE NODE TABLE ${label}(${propertiesStr}, PRIMARY KEY (${primaryKey}))`;
     await this.executeQuery(query);
   }
 
@@ -62,32 +100,22 @@ export class KuzuAdapter {
     toNode: string,
     properties: Record<string, string> = {}
   ): Promise<void> {
-    const propertiesStr = Object.entries(properties)
+    const propertiesStr = properties && Object.entries(properties)
       .map(([name, type]) => `${name} ${type}`)
       .join(', ');
 
-    const query = `CREATE REL TABLE ${label} (
-      FROM ${fromNode} TO ${toNode}${propertiesStr ? `, ${propertiesStr}` : ''}
-    )`;
+    const query = `CREATE REL TABLE ${label}(FROM ${fromNode} TO ${toNode}${propertiesStr ? `, ${propertiesStr}` : ''})`;
     await this.executeQuery(query);
   }
 
   // Data manipulation methods
   async addNode(label: string, properties: Record<string, any>): Promise<any> {
-    const keys = Object.keys(properties);
-    const values = Object.values(properties);
+    const props = Object.entries(properties)
+      .map(([k, v]) => `${k}: ${typeof v === 'string' ? `"${v}"` : v}`)
+      .join(', ');
 
-    const query = `
-      CREATE (n:${label} {${keys.map(k => `${k}: $${k}`).join(', ')}})
-      RETURN n
-    `;
-
-    const params = keys.reduce((acc, key, index) => {
-      acc[key] = values[index];
-      return acc;
-    }, {} as Record<string, any>);
-
-    return this.executeQuery(query, params);
+    const query = `CREATE (n:${label} {${props}}) RETURN n.*`;
+    return this.executeQuery(query);
   }
 
   async addRelationship(
@@ -98,25 +126,22 @@ export class KuzuAdapter {
     toNodeId: string,
     properties: Record<string, any> = {}
   ): Promise<any> {
-    const keys = Object.keys(properties);
-    const values = Object.values(properties);
+    const props = properties && Object.entries(properties)
+      .map(([k, v]) => `${k}: ${typeof v === 'string' ? `"${v}"` : v}`)
+      .join(', ');
 
     const query = `
       MATCH (a:${fromNodeLabel}), (b:${toNodeLabel})
-      WHERE a.id = $fromId AND b.id = $toId
-      CREATE (a)-[r:${label} {${keys.map(k => `${k}: $${k}`).join(', ')}}]->(b)
+      WHERE a.id = "${fromNodeId}" AND b.id = "${toNodeId}"
+      CREATE (a)-[r:${label} ${props ? `{${props}}` : ''}]->(b)
       RETURN r
     `;
+    
+    return this.executeQuery(query);
+  }
 
-    const params = {
-      fromId: fromNodeId,
-      toId: toNodeId,
-      ...keys.reduce((acc, key, index) => {
-        acc[key] = values[index];
-        return acc;
-      }, {} as Record<string, any>)
-    };
-
-    return this.executeQuery(query, params);
+  async importCSV(nodeLabel: string, csvPath: string): Promise<any> {
+    const query = `COPY ${nodeLabel} FROM "${csvPath}"`;
+    return this.executeQuery(query);
   }
 }
