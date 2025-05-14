@@ -1,119 +1,160 @@
 import { IAgentRuntime, logger, Service } from "@elizaos/core";
 import { KuzuAdapter } from "../db/kuzu-adapter";
+import { ClinicalTrial, Gene, ResearchPaper, Variant } from "../types";
 
+/**
+ * Core service for SickleGraph knowledge graph operations
+ */
 export class SickleGraphService extends Service {
-    private dbAdapter: KuzuAdapter | null = null;
+    private dbAdapter: KuzuAdapter;
+    private initialized: boolean = false;
+
+    static serviceType = "sicklegraph";
+    capabilityDescription = "SickleGraph knowledge graph for gene therapy innovation in Africa";
 
     constructor(protected runtime: IAgentRuntime) {
         super(runtime);
-        this.runtime = runtime;
     }
 
-    static serviceType = "sicklegraph";
-    capabilityDescription = "This service provides access to the SickleGraph knowledge graph for gene therapy innovation in Africa.";
-
+    /**
+     * Proper service initialization with database setup
+     */
     static async create(runtime: IAgentRuntime): Promise<SickleGraphService> {
         const service = new SickleGraphService(runtime);
         await service.initializeDatabase();
         return service;
     }
 
-    static async stop(runtime: IAgentRuntime) {
-        logger.info("*** Stopping SickleGraph service ***");
-        const service = runtime.getService(SickleGraphService.serviceType);
-        if (!service) {
-            throw new Error("SickleGraph service not found");
-        }
-        await service.stop();
-    }
-
-    async stop() {
-        if (this.dbAdapter) {
-            await this.dbAdapter.close();
-        }
-        logger.info("*** SickleGraph service stopped ***");
-    }
-
-    private async initializeDatabase() {
+    /**
+     * Cleanup resources when service is stopped
+     */
+    async stop(): Promise<void> {
         try {
-            const dbPath = process.env.KUZU_DB_PATH || ':memory:';
-            logger.info(`Initializing Kùzu database at ${dbPath}`);
-
-            this.dbAdapter = new KuzuAdapter({ KUZU_DB_PATH: dbPath });
-            await this.dbAdapter.initialize();
-
-            // Initialize schema if needed
-            await this.initializeSchema();
-
-            logger.info('Kùzu database initialized successfully');
+            if (this.dbAdapter) {
+                logger.info('Closing database connection');
+                await this.dbAdapter.close();
+            }
+            this.initialized = false;
+            logger.info('SickleGraph service stopped');
         } catch (error) {
-            logger.error('Failed to initialize Kùzu database:', error);
+            logger.error('Error stopping SickleGraph service:', error);
             throw error;
         }
     }
 
-    private async initializeSchema() {
-        if (!this.dbAdapter) return;
+    private async initializeDatabase(): Promise<void> {
+        try {
+            this.dbAdapter = new KuzuAdapter({
+                KUZU_DB_PATH: process.env.KUZU_DB_PATH || './data/sicklegraph.db'
+            });
 
-        // Create node tables
-        await this.dbAdapter.createNodeType('Gene', {
-            id: 'STRING',
-            name: 'STRING',
-            description: 'STRING',
-            chromosome: 'STRING'
-        }, 'id');
+            await this.dbAdapter.initialize();
+            await this.dbAdapter.initializeFullSchema();
 
-        await this.dbAdapter.createNodeType('Variant', {
-            id: 'STRING',
-            name: 'STRING',
-            clinicalSignificance: 'STRING',
-            alleleFrequency: 'FLOAT'
-        }, 'id');
-
-        await this.dbAdapter.createNodeType('Patient', {
-            id: 'STRING',
-            age: 'INT64',
-            gender: 'STRING',
-            location: 'STRING'
-        }, 'id');
-
-        // Create relationship tables
-        await this.dbAdapter.createRelationshipType(
-            'HAS_VARIANT',
-            'Gene',
-            'Variant',
-            { frequency: 'FLOAT' }
-        );
-
-        await this.dbAdapter.createRelationshipType(
-            'TREATED_WITH',
-            'Patient',
-            'Gene',
-            { outcome: 'STRING', date: 'DATE' }
-        );
+            this.initialized = true;
+            logger.info('SickleGraph service fully initialized');
+        } catch (error) {
+            logger.error('Database initialization failed:', error);
+            throw error;
+        }
     }
 
-    async importGeneData(csvData: string): Promise<void> {
-        if (!this.dbAdapter) throw new Error('Database not initialized');
-        
-        // Write CSV to virtual filesystem
-        await this.dbAdapter.writeFile('/genes.csv', csvData);
-        
-        // Import into database
-        await this.dbAdapter.importCSV('Gene', '/genes.csv');
-    }
+    /**
+     * Search genes by symbol, name or description
+     */
+    async searchGenes(query: string, limit: number = 10): Promise<Gene[]> {
+        if (!this.initialized) throw new Error('Service not initialized');
 
-    async queryGenes(pattern: string): Promise<any> {
-        if (!this.dbAdapter) throw new Error('Database not initialized');
-        
-        const query = `
+        const searchQuery = `
             MATCH (g:Gene)
-            WHERE g.name CONTAINS "${pattern}" OR g.description CONTAINS "${pattern}"
+            WHERE g.symbol CONTAINS $query OR 
+                  g.name CONTAINS $query OR
+                  g.description CONTAINS $query
             RETURN g.*
-            LIMIT 100
+            LIMIT $limit
         `;
-        
-        return this.dbAdapter.executeQuery(query);
+
+        const result = await this.dbAdapter.executeQuery<Gene>(
+            searchQuery,
+            { query, limit }
+        );
+        return result.data;
     }
 
+    /**
+     * Get gene with related entities
+     */
+    async getGene(geneId: string): Promise<Gene & {
+        variants?: Variant[];
+        treatments?: any[];
+        papers?: ResearchPaper[];
+    }> {
+        if (!this.initialized) throw new Error('Service not initialized');
+
+        const query = `
+            MATCH (g:Gene {id: $geneId})
+            OPTIONAL MATCH (g)-[r:HAS_VARIANT]->(v:Variant)
+            OPTIONAL MATCH (g)<-[t:TARGETED_BY]-(tr:Treatment)
+            OPTIONAL MATCH (g)-[m:MENTIONED_IN]->(p:ResearchPaper)
+            RETURN g.*, 
+                   COLLECT(DISTINCT v.*) as variants,
+                   COLLECT(DISTINCT {treatment: tr.*, efficacy: t.efficacy}) as treatments,
+                   COLLECT(DISTINCT p.*) as papers
+        `;
+
+        const result = await this.dbAdapter.executeQuery(query, { geneId });
+        return result.data[0];
+    }
+
+    /**
+        * Find clinical trials targeting specific genetic variants
+        */
+    async findTrialsForVariant(variantId: string, region: string = 'Africa'): Promise<ClinicalTrial[]> {
+        if (!this.initialized) throw new Error('Service not initialized');
+
+        const query = `
+            MATCH (v:Variant {id: $variantId})<-[:HAS_VARIANT]-(g:Gene)
+            MATCH (g)<-[:TARGETS]-(t:ClinicalTrial)
+            WHERE t.region CONTAINS $region OR t.multicentric = true
+            RETURN t.*
+            ORDER BY t.startDate DESC
+        `;
+
+        const result = await this.dbAdapter.executeQuery<ClinicalTrial>(
+            query,
+            { variantId, region }
+        );
+        return result.data;
+    }
+
+    /**
+     * Search research papers with genetic context
+     */
+    async searchPapers(query: string, limit: number = 10): Promise<ResearchPaper[]> {
+        if (!this.initialized) throw new Error('Service not initialized');
+
+        const searchQuery = `
+            MATCH (p:ResearchPaper)
+            WHERE p.title CONTAINS $query OR 
+                  ANY(author IN p.authors WHERE author CONTAINS $query)
+            OPTIONAL MATCH (p)-[:MENTIONS]->(g:Gene)
+            WITH p, COLLECT(g.symbol) as mentionedGenes
+            RETURN p.*, mentionedGenes
+            LIMIT $limit
+        `;
+
+        const result = await this.dbAdapter.executeQuery<ResearchPaper>(
+            searchQuery,
+            { query, limit }
+        );
+        return result.data;
+    }
+
+    /**
+     * Import gene data from CSV
+     */
+    async importGeneData(csvData: string): Promise<void> {
+        if (!this.initialized) throw new Error('Service not initialized');
+        await this.dbAdapter.importGeneData(csvData);
+    }
 }

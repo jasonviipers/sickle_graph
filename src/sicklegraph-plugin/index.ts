@@ -1,18 +1,28 @@
 import { IAgentRuntime, logger, Plugin } from "@elizaos/core";
-import { Routes } from "./routes";
+import { SickleGraphRoutes } from "./routes";
+import { SickleGraphService } from "./services";
+import { ResearchAssistantAction } from "./actions/research-assistant";
 
+/**
+ * SickleGraph plugin for ElizaOS
+ */
 export const SickleGraphPlugin: Plugin = {
-    name: 'SickleGraphPlugin',
-    description: 'SickleGraphPlugin',
-    actions: [],
-    routes: Routes,
+    name: 'SickleGraph',
+    description: 'Biomedical knowledge graph for gene therapy research',
+    
+    actions: [ResearchAssistantAction],
+    routes: SickleGraphRoutes,
+
+    services: [],
     providers: [],
     evaluators: [],
+
     init: async (config: Record<string, string>, runtime: IAgentRuntime) => {
-        logger.info('SickleGraphPlugin init');
-        logger.info(config);
-        // setTimeout(async () => {
-        //     await runtime.evaluate('hello world');
-        // }, 10000); //prevent undefined error, the db property is not available immediately
+        logger.info('Initializing SickleGraph plugin');
+        // Warm up the service
+        const service = await runtime.getService<SickleGraphService>(
+            SickleGraphService.serviceType
+        );
+        logger.info('SickleGraph plugin ready');
     },
 }
