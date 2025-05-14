@@ -8,7 +8,7 @@ export const character: Character = {
         ...(process.env.ANTHROPIC_API_KEY ? ["@elizaos/plugin-anthropic"] : []),
         ...(!process.env.OPENAI_API_KEY && !process.env.ANTHROPIC_API_KEY
           ? ["@elizaos/plugin-local-ai"]
-          : ["@elizaos/plugin-sicklegraph"]),
+          : []),
         
         ...(process.env.DISCORD_API_TOKEN ? ["@elizaos/plugin-discord"] : []),
         ...(process.env.TWITTER_USERNAME ? ["@elizaos/plugin-twitter"] : []),

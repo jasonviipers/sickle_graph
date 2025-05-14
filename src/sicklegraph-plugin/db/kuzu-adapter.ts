@@ -1,18 +1,20 @@
 import { logger } from '@elizaos/core';
 import * as kuzu from 'kuzu-wasm';
+import { Config, configSchema } from '../types';
 
 export class KuzuAdapter {
   private db: any; // Type will depend on Kùzu's TypeScript definitions
-  private dbPath: string;
+  private config: Config;
 
-  constructor(dbPath: string) {
-    this.dbPath = dbPath;
+  constructor(config?:Partial<Config>) {
+    this.config = configSchema.parse(config || {});
+    this.db = kuzu.createDatabase(this.config.KUZU_DB_PATH);
   }
 
   async initialize(): Promise<void> {
     try {
-      logger.info(`Initializing Kùzu database at ${this.dbPath}`);
-      this.db = new kuzu.Database(this.dbPath);
+      logger.info(`Initializing Kùzu database at ${this.config.KUZU_DB_PATH}`);
+      this.db = new kuzu.connection(this.db);
       logger.info('Kùzu database initialized successfully');
     } catch (error) {
       logger.error('Failed to initialize Kùzu database:', error);
@@ -49,21 +51,21 @@ export class KuzuAdapter {
     const propertiesStr = Object.entries(properties)
       .map(([name, type]) => `${name} ${type}`)
       .join(', ');
-    
+
     const query = `CREATE NODE TABLE ${label} (${propertiesStr})`;
     await this.executeQuery(query);
   }
 
   async createRelationshipType(
-    label: string, 
-    fromNode: string, 
-    toNode: string, 
+    label: string,
+    fromNode: string,
+    toNode: string,
     properties: Record<string, string> = {}
   ): Promise<void> {
     const propertiesStr = Object.entries(properties)
       .map(([name, type]) => `${name} ${type}`)
       .join(', ');
-    
+
     const query = `CREATE REL TABLE ${label} (
       FROM ${fromNode} TO ${toNode}${propertiesStr ? `, ${propertiesStr}` : ''}
     )`;
@@ -74,17 +76,17 @@ export class KuzuAdapter {
   async addNode(label: string, properties: Record<string, any>): Promise<any> {
     const keys = Object.keys(properties);
     const values = Object.values(properties);
-    
+
     const query = `
       CREATE (n:${label} {${keys.map(k => `${k}: $${k}`).join(', ')}})
       RETURN n
     `;
-    
+
     const params = keys.reduce((acc, key, index) => {
       acc[key] = values[index];
       return acc;
     }, {} as Record<string, any>);
-    
+
     return this.executeQuery(query, params);
   }
 
@@ -98,14 +100,14 @@ export class KuzuAdapter {
   ): Promise<any> {
     const keys = Object.keys(properties);
     const values = Object.values(properties);
-    
+
     const query = `
       MATCH (a:${fromNodeLabel}), (b:${toNodeLabel})
       WHERE a.id = $fromId AND b.id = $toId
       CREATE (a)-[r:${label} {${keys.map(k => `${k}: $${k}`).join(', ')}}]->(b)
       RETURN r
     `;
-    
+
     const params = {
       fromId: fromNodeId,
       toId: toNodeId,
@@ -114,7 +116,7 @@ export class KuzuAdapter {
         return acc;
       }, {} as Record<string, any>)
     };
-    
+
     return this.executeQuery(query, params);
   }
 }
