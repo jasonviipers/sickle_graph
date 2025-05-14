@@ -1,6 +1,6 @@
 import { logger } from '@elizaos/core';
 import * as kuzu from '@kuzu/kuzu-wasm';
-import { Config, configSchema } from '../types';
+import { Config, configSchema } from '../environment';
 
 export class KuzuAdapter {
   private db: any;
