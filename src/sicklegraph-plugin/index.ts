@@ -1,7 +1,7 @@
 import { IAgentRuntime, logger, Plugin } from "@elizaos/core";
 import { SickleGraphRoutes } from "./routes";
-import { SickleGraphService } from "./services";
 import { ResearchAssistantAction } from "./actions/research-assistant";
+import { SickleGraphService } from "./services/sickle-graph-service";
 
 /**
  * SickleGraph plugin for ElizaOS
