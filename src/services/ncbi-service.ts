@@ -1,19 +1,22 @@
-import { logger } from '@elizaos/core';
+import { logger, Service } from '@elizaos/core';
 import axios, { AxiosInstance } from 'axios';
 import { KuzuAdapter } from '../db/kuzu-adapter';
 import { NCBIOptions, Gene, ResearchPaper, ClinicalVariant } from '../types';
 
-export class NCBIService {
+export class NCBIService extends Service {
     private readonly api: AxiosInstance;
     private readonly apiKey: string;
     private readonly baseUrl: string;
     private readonly rateLimit: number = 3; // requests per second
     private lastRequestTime: number = 0;
 
+    capabilityDescription = "NCBI knowledge graph for biomedical research";
+
     constructor(
         private dbAdapter: KuzuAdapter,
         options?: NCBIOptions
     ) {
+        super();
         this.apiKey = options?.apiKey || process.env.NCBI_API_KEY || '';
         this.baseUrl = options?.baseUrl || 'https://eutils.ncbi.nlm.nih.gov/entrez/eutils';
 
@@ -25,6 +28,18 @@ export class NCBIService {
                 retmode: 'json'
             }
         });
+    }
+
+    /**
+     * Cleanup resources when service is stopped
+     */
+    async stop(): Promise<void> {
+        try {
+            await this.dbAdapter.close();
+            logger.info('SickleGraph service stopped');
+        } catch (error) {
+            logger.error('Error stopping SickleGraph service:', error);
+        }
     }
 
     // ==================== Core Methods ====================
