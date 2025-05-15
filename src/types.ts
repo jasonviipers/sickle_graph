@@ -1,3 +1,4 @@
+// types.ts
 /**
  * Core biomedical types for SickleGraph
  */
@@ -9,6 +10,7 @@ export interface Gene {
     chromosome: string;
     ensemblId?: string;
     location?: string;
+    lastUpdated?: string;
 }
 
 export interface Variant {
@@ -17,6 +19,21 @@ export interface Variant {
     clinicalSignificance: 'pathogenic' | 'likely_pathogenic' | 'vus' | 'likely_benign' | 'benign';
     populationFrequency?: number;
     variantType?: string;
+}
+
+export interface ClinicalVariant extends Variant {
+    geneSymbol: string;
+    lastEvaluated: string;
+    reviewStatus: string;
+    lastUpdated: string;
+    conditions?: {
+        name: string;
+        medgenId: string;
+    }[];
+    interpretations?: {
+        description: string;
+        reviewStatus: string;
+    }[];
 }
 
 export interface ClinicalTrial {
@@ -38,6 +55,8 @@ export interface ResearchPaper {
     publicationDate: string;
     abstract?: string;
     pmid?: string;
+    doi?: string;
+    keywords?: string[];
 }
 
 export interface KnowledgeGraphResult<T> {
@@ -45,13 +64,14 @@ export interface KnowledgeGraphResult<T> {
     metadata: {
         queryTime: number;
         resultCount: number;
-        source: 'kuzu';
+        source: 'kuzu' | 'neo4j';
     };
 }
 
 export interface NCBIOptions {
-  apiKey?: string;
-  baseUrl?: string;
+    apiKey?: string;
+    baseUrl?: string;
+    rateLimit?: number;
 }
 
 /**
@@ -68,4 +88,5 @@ export interface VariantQuery {
     geneId?: string;
     significance?: Variant['clinicalSignificance'];
     frequencyRange?: [number, number];
+    condition?: string;
 }

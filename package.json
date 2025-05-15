@@ -30,10 +30,11 @@
   "dependencies": {
     "@elizaos/cli": "beta",
     "@elizaos/core": "beta",
-    "@kuzu/kuzu-wasm": "^0.7.0",
+    "@elizaos/plugin-bootstrap": "^1.0.0-beta.51",
+    "@elizaos/plugin-groq": "beta",
     "@elizaos/plugin-openai": "beta",
     "@elizaos/plugin-sql": "beta",
-    "@elizaos/plugin-groq": "beta",
+    "@kuzu/kuzu-wasm": "^0.7.0",
     "axios": "^1.9.0",
     "zod": "^3.24.2"
   },
