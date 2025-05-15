@@ -2,8 +2,8 @@ import { Action, HandlerCallback, IAgentRuntime, logger, Memory, State } from "@
 
 
 export const ResearchAssistantAction: Action = {
-  name: "ELIZA_RESEARCH_ASSISTANT",
-  similes: ["ASK_ELIZA", "RESEARCH_QUERY", "GENE_QUERY"],
+  name: "RESEARCH_ASSISTANT",
+  similes: ["ASK", "RESEARCH_QUERY", "GENE_QUERY"],
   description: "Queries the biomedical knowledge graph for research information",
   validate: async (_runtime, _message, _state) => {
     const text = _message.content.text.toLowerCase();
