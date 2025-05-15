@@ -1,6 +1,7 @@
 import { IAgentRuntime, logger, Service } from "@elizaos/core";
 import { KuzuAdapter } from "../db/kuzu-adapter";
 import { ClinicalTrial, Gene, ResearchPaper, Variant } from "../types";
+import { NCBIService } from "./ncbi-service";
 
 /**
  * Core service for SickleGraph knowledge graph operations
@@ -8,12 +9,14 @@ import { ClinicalTrial, Gene, ResearchPaper, Variant } from "../types";
 export class SickleGraphService extends Service {
     private dbAdapter: KuzuAdapter;
     private initialized: boolean = false;
+    private ncbiService: NCBIService;
 
     static serviceType = "sicklegraph";
     capabilityDescription = "SickleGraph knowledge graph for gene therapy innovation in Africa";
 
     constructor(protected runtime: IAgentRuntime) {
         super(runtime);
+       
     }
 
     /**
@@ -51,7 +54,10 @@ export class SickleGraphService extends Service {
             await this.dbAdapter.initialize();
             await this.dbAdapter.initializeFullSchema();
 
-            this.initialized = true;
+             // Reinitialize NCBI service with the actual dbAdapter
+             this.ncbiService = new NCBIService(this.dbAdapter);
+             this.initialized = true;
+
             logger.info('SickleGraph service fully initialized');
         } catch (error) {
             logger.error('Database initialization failed:', error);
@@ -63,7 +69,7 @@ export class SickleGraphService extends Service {
      * Search genes by symbol, name or description
      */
     async searchGenes(query: string, limit: number = 10): Promise<Gene[]> {
-        if (!this.initialized) throw new Error('Service not initialized');
+        if (!this.initialized || !this.dbAdapter) throw new Error('Service not initialized');
 
         const searchQuery = `
             MATCH (g:Gene)

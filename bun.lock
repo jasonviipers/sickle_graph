@@ -6,6 +6,7 @@
       "dependencies": {
         "@elizaos/cli": "beta",
         "@elizaos/core": "beta",
+        "@elizaos/plugin-bootstrap": "^1.0.0-beta.51",
         "@elizaos/plugin-groq": "beta",
         "@elizaos/plugin-openai": "beta",
         "@elizaos/plugin-sql": "beta",
@@ -45,6 +46,8 @@
     "@elizaos/cli": ["@elizaos/cli@1.0.0-beta.51", "", { "dependencies": { "@electric-sql/pglite": "^0.2.17", "@elizaos/core": "^1.0.0-beta.51", "@elizaos/plugin-sql": "^1.0.0-beta.51", "bun": "^1.2.13", "path-to-regexp": "^8.2.0", "socket.io": "^4.8.1", "zod": "3.24.2" }, "bin": { "elizaos": "dist/index.js" } }, "sha512-oHUEjkUquqIHXMWkOlfhXTxAn5SUfRw3+FVkueG44ptGhxMFzeVKW5gUAg7MFiY4NtaZiaFkvZ3mlOG7uYy+9g=="],
 
     "@elizaos/core": ["@elizaos/core@1.0.0-beta.51", "", { "dependencies": { "@opentelemetry/api": "^1.9.0", "@opentelemetry/exporter-trace-otlp-http": "^0.53.0", "@opentelemetry/instrumentation-pg": "^0.52.0", "@opentelemetry/sdk-metrics": "^1.26.0", "@opentelemetry/sdk-node": "^0.53.0", "buffer": "^6.0.3", "crypto-browserify": "^3.12.1", "dotenv": "16.4.5", "events": "^3.3.0", "glob": "11.0.0", "handlebars": "^4.7.8", "js-sha1": "0.7.0", "langchain": "^0.3.15", "pino": "^9.6.0", "pino-pretty": "^13.0.0", "stream-browserify": "^3.0.0", "unique-names-generator": "4.7.1", "uuid": "11.0.3" } }, "sha512-BcNhARMfMkDgeTke8VDTg2Mkad+nM3ZcA0OzZeMrXDCEBlXw6cBV2Un3HrEuz1pcaTAH6aq0Rxgj/lf/RvpMwQ=="],
+
+    "@elizaos/plugin-bootstrap": ["@elizaos/plugin-bootstrap@1.0.0-beta.51", "", { "dependencies": { "@elizaos/core": "^1.0.0-beta.51" }, "peerDependencies": { "whatwg-url": "7.1.0" } }, "sha512-9Ja4dgnfirik2XMkpq9h5FY/RF3xPTmMgA6DydUKO5Tttm1f/Qrqc57/aE/LalXviAGGzw8GCsAA0kOaIxYpig=="],
 
     "@elizaos/plugin-groq": ["@elizaos/plugin-groq@1.0.0-beta.51", "", { "dependencies": { "@ai-sdk/groq": "^1.2.9", "@ai-sdk/ui-utils": "^1.2.11", "@elizaos/core": "^1.0.0-beta.51", "ai": "^4.3.15", "js-tiktoken": "^1.0.18", "tsup": "8.4.0" } }, "sha512-+zcw2eQjZ2N/LNsQ95xRVxH3itny3IohHIsHUQ07xfzircb7P+bFNbnaiIwVc8lL1uXlggucjUjbIIURviLWWQ=="],
 
