@@ -1,16 +1,41 @@
 import {
+  type Plugin,
   type IAgentRuntime,
   type Project,
   type ProjectAgent,
+  logger,
 } from '@elizaos/core';
-import starterPlugin from './plugin';
-import { character, initCharacter } from './character/sicklegraph-agent';
+import { ResearchAssistantAction } from "./actions/research-assistant";
+import { SickleGraphService } from "./services/sickle-graph-service";
+import { SickleGraphRoutes } from "./routes";
+import { character, initCharacter } from "./character/sicklegraph-agent";
 
+
+/**
+ * SickleGraph plugin for ElizaOS
+ */
+export const SickleGraphPlugin: Plugin = {
+  name: 'SickleGraph',
+  description: 'Biomedical knowledge graph for gene therapy research',
+
+  actions: [ResearchAssistantAction],
+  services: [SickleGraphService],
+  routes: SickleGraphRoutes,
+
+  init: async (config: Record<string, string>, runtime: IAgentRuntime) => {
+    logger.info('Initializing SickleGraph plugin');
+    // Warm up the service
+    const service = await runtime.getService<SickleGraphService>(
+      SickleGraphService.serviceType
+    );
+    logger.info('SickleGraph plugin ready');
+  },
+}
 
 export const projectAgent: ProjectAgent = {
   character,
   init: async (runtime: IAgentRuntime) => await initCharacter({ runtime }),
-  plugins: [starterPlugin],
+  plugins: [SickleGraphPlugin],
 };
 const project: Project = {
   agents: [projectAgent],

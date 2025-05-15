@@ -49,6 +49,11 @@ export interface KnowledgeGraphResult<T> {
     };
 }
 
+export interface NCBIOptions {
+  apiKey?: string;
+  baseUrl?: string;
+}
+
 /**
  * Query types for advanced searches
  */

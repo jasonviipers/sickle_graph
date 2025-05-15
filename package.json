@@ -1,19 +1,19 @@
 {
-  "name": "sickle_graph",
-  "description": "Project starter for elizaOS",
+  "name": "@elizaos/plugin-sicklegraph",
+  "description": "Plugin starter for elizaOS",
   "version": "0.1.0",
-  "type": "module",
   "private": true,
+  "type": "module",
   "main": "dist/index.js",
   "module": "dist/index.js",
   "types": "dist/index.d.ts",
   "keywords": [
-    "project",
+    "plugin",
     "elizaos"
   ],
   "repository": {
     "type": "git",
-    "url": "github:elizaos/sickle_graph"
+    "url": "github:elizaos/plugin-sicklegraph"
   },
   "exports": {
     "./package.json": "./package.json",
@@ -30,43 +30,45 @@
   "dependencies": {
     "@elizaos/cli": "beta",
     "@elizaos/core": "beta",
-    "@elizaos/plugin-bootstrap": "^1.0.0-beta.49",
-    "@elizaos/plugin-elevenlabs": "^1.0.0-beta.48",
-    "@elizaos/plugin-groq": "beta",
-    "@elizaos/plugin-local-ai": "^1.0.0-beta.49",
+    "@kuzu/kuzu-wasm": "^0.7.0",
     "@elizaos/plugin-openai": "beta",
     "@elizaos/plugin-sql": "beta",
-    "@kuzu/kuzu-wasm": "^0.7.0",
-    "kuzu": "^0.10.0",
-    "zod": "3.24.2"
+    "@elizaos/plugin-groq": "beta",
+    "axios": "^1.9.0",
+    "zod": "^3.24.2"
   },
   "devDependencies": {
     "tsup": "8.4.0",
-    "prettier": "3.5.3",
-    "vitest": "2.1.5",
-    "@vitest/coverage-v8": "2.1.5"
+    "typescript": "5.8.2",
+    "prettier": "3.5.3"
   },
   "scripts": {
     "start": "elizaos start",
+    "test-with-cli": "cd ../cli && bun run build && cd ../plugin-starter && elizaos test",
     "dev": "elizaos dev",
     "build": "tsup",
     "lint": "prettier --write ./src",
-    "test": "vitest run",
-    "test:coverage": "vitest run --coverage",
-    "test:watch": "vitest",
+    "test": "elizaos test",
+    "publish": "elizaos publish",
     "format": "prettier --write ./src",
     "format:check": "prettier --check ./src"
   },
   "publishConfig": {
     "access": "public"
   },
+  "resolutions": {
+    "zod": "3.24.2"
+  },
   "gitHead": "b165ad83e5f7a21bc1edbd83374ca087e3cd6b33",
-  "packageType": "project",
+  "packageType": "plugin",
+  "platform": "universal",
   "agentConfig": {
-    "pluginType": "elizaos:project:1.0.0",
-    "projectConfig": {
-      "name": "sickle_graph",
-      "description": "Project starter for elizaOS"
+    "pluginType": "elizaos:plugin:1.0.0",
+    "pluginParameters": {
+      "API_KEY": {
+        "type": "string",
+        "description": "API key for the service"
+      }
     }
   }
 }

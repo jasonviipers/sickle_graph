@@ -1,5 +1,5 @@
 import { Route } from "@elizaos/core";
-import { SickleGraphService } from "../services";
+import { SickleGraphService } from "../services/sickle-graph-service";
 
 /**
  * REST API endpoints for SickleGraph knowledge graph

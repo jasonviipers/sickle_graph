@@ -1,15 +1,15 @@
 import { logger } from '@elizaos/core';
 import * as kuzu from '@kuzu/kuzu-wasm';
-import { Config, configSchema } from '../environment';
 import { KnowledgeGraphResult } from '../types';
+import { envSchema, type Env } from '../environment';
 
 export class KuzuAdapter {
   private db: any;
   private conn: any;
-  private config: Config;
+  private config: Env;
 
-  constructor(config?: Partial<Config>) {
-    this.config = configSchema.parse(config || {});
+  constructor(config?: Partial<Env>) {
+    this.config = envSchema.parse(config || {});
   }
 
   /**
