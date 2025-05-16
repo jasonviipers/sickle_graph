@@ -2,6 +2,7 @@ import { IAgentRuntime, logger, Service } from "@elizaos/core";
 import { KuzuAdapter } from "../db/kuzu-adapter";
 import { ClinicalTrial, Gene, ResearchPaper, Variant } from "../types";
 import { NCBIService } from "./ncbi-service";
+import { GeneQuery, PaperQuery } from "src/environment";
 
 /**
  * Core service for SickleGraph knowledge graph operations
@@ -16,7 +17,12 @@ export class SickleGraphService extends Service {
 
     constructor(protected runtime: IAgentRuntime) {
         super(runtime);
-       
+        this.config = {
+            KUZU_DB_PATH: runtime.getSetting('KUZU_DB_PATH'),
+            NCBI_API_KEY: runtime.getSetting('NCBI_API_KEY'),
+            NCBI_BASE_URL: runtime.getSetting('NCBI_BASE_URL'),
+            KNOWLEDGE_GRAPH_CACHE_TTL: runtime.getSetting('KNOWLEDGE_GRAPH_CACHE_TTL'),
+        };
     }
 
     /**
@@ -48,15 +54,15 @@ export class SickleGraphService extends Service {
     private async initializeDatabase(): Promise<void> {
         try {
             this.dbAdapter = new KuzuAdapter({
-                KUZU_DB_PATH: process.env.KUZU_DB_PATH || './data/sicklegraph.db'
+                KUZU_DB_PATH: this.config.KUZU_DB_PATH,
             });
 
             await this.dbAdapter.initialize();
             await this.dbAdapter.initializeFullSchema();
 
-             // Reinitialize NCBI service with the actual dbAdapter
-             this.ncbiService = new NCBIService(this.dbAdapter);
-             this.initialized = true;
+            // Reinitialize NCBI service with the actual dbAdapter
+            this.ncbiService = new NCBIService(this.runtime);
+            this.initialized = true;
 
             logger.info('SickleGraph service fully initialized');
         } catch (error) {
@@ -157,10 +163,129 @@ export class SickleGraphService extends Service {
     }
 
     /**
+     * Advance search for genes, variants, and research papers
+     */
+    async searchPapersAdvanced(query: PaperQuery): Promise<ResearchPaper[]> {
+        if (!this.initialized) throw new Error('Service not initialized');
+
+        const { keyword, journal, author, fromDate, toDate, mentionsGene, limit = 10, offset = 0 } = query;
+        let whereClauses = [];
+
+        if (keyword) whereClauses.push(`(p.title CONTAINS $keyword OR p.abstract CONTAINS $keyword)`);
+        if (journal) whereClauses.push(`p.journal CONTAINS $journal`);
+        if (author) whereClauses.push(`ANY(a IN p.authors WHERE a CONTAINS $author)`);
+        if (fromDate) whereClauses.push(`p.publicationDate >= $fromDate`);
+        if (toDate) whereClauses.push(`p.publicationDate <= $toDate`);
+
+        let matchClause = `MATCH (p:ResearchPaper)`;
+        if (mentionsGene) {
+            matchClause += `\nMATCH (p)-[:MENTIONS]->(g:Gene)`;
+            whereClauses.push(`g.symbol CONTAINS $mentionsGene`);
+        }
+
+        const searchQuery = `
+            ${matchClause}
+            ${whereClauses.length ? 'WHERE ' + whereClauses.join(' AND ') : ''}
+            OPTIONAL MATCH (p)-[:MENTIONS]->(g:Gene)
+            WITH p, COLLECT(g.symbol) as mentionedGenes
+            RETURN p.*, mentionedGenes
+            ORDER BY p.publicationDate DESC
+            LIMIT $limit
+            SKIP $offset
+        `;
+
+        const result = await this.dbAdapter.executeQuery<ResearchPaper>(
+            searchQuery,
+            { ...query, limit, offset }
+        );
+        return result.data;
+    }
+
+    /**
+     * Get total count for pagination
+     * @param entityType The entity type to count
+     * @param filterQuery The filter query to apply
+     */
+    async getEntityCount(entityType: string, filterQuery: Record<string, any> = {}): Promise<number> {
+        if (!this.initialized) throw new Error('Service not initialized');
+
+        let whereClauses = [];
+        let matchClause = `MATCH (e:${entityType})`;
+
+        // Build WHERE clauses based on filter parameters
+        for (const [key, value] of Object.entries(filterQuery)) {
+            if (value !== undefined && value !== null) {
+                if (typeof value === 'string') {
+                    whereClauses.push(`e.${key} CONTAINS $${key}`);
+                } else {
+                    whereClauses.push(`e.${key} = $${key}`);
+                }
+            }
+        }
+
+        const countQuery = `
+        ${matchClause}
+        ${whereClauses.length ? 'WHERE ' + whereClauses.join(' AND ') : ''}
+        RETURN COUNT(e) as count
+    `;
+
+        const result = await this.dbAdapter.executeQuery<{ count: number }>(
+            countQuery,
+            filterQuery
+        );
+
+        return result.data[0]?.count || 0;
+    }
+
+    /**
+     * Enhanced version of searchGenesAdvanced with more filtering options
+     */
+    async searchGenesAdvanced(query: GeneQuery): Promise<Gene[]> {
+        const { symbol, chromosome, keyword, associatedDisease, hasClinicalTrials, limit = 10, offset = 0 } = query;
+        let whereClauses = [];
+        if (symbol) whereClauses.push(`g.symbol CONTAINS $symbol`);
+        if (chromosome) whereClauses.push(`g.chromosome = $chromosome`);
+        if (keyword) whereClauses.push(`(g.description CONTAINS $keyword OR g.name CONTAINS $keyword)`);
+
+        let matchClause = `MATCH (g:Gene)`;
+
+        // Add disease association filter if specified
+        if (associatedDisease) {
+            matchClause += `\nMATCH (g)-[:ASSOCIATED_WITH]->(d:Disease)`;
+            whereClauses.push(`d.name CONTAINS $associatedDisease`);
+        }
+
+        // Add clinical trials filter if specified
+        if (hasClinicalTrials === true) {
+            matchClause += `\nMATCH (g)<-[:TARGETS]-(t:ClinicalTrial)`;
+        }
+
+        const searchQuery = `
+        ${matchClause}
+        ${whereClauses.length ? 'WHERE ' + whereClauses.join(' AND ') : ''}
+        RETURN DISTINCT g.*
+        ORDER BY g.symbol
+        LIMIT $limit
+        SKIP $offset
+    `;
+
+        return this.dbAdapter.executeQuery<Gene>(searchQuery, { ...query, limit, offset }).then(r => r.data);
+    }
+    /**
      * Import gene data from CSV
      */
     async importGeneData(csvData: string): Promise<void> {
         if (!this.initialized) throw new Error('Service not initialized');
         await this.dbAdapter.importGeneData(csvData);
+    }
+
+    /**
+    * Get the database adapter instance
+    */
+    getDbAdapter(): KuzuAdapter {
+        if (!this.dbAdapter) {
+            throw new Error('Database adapter not initialized');
+        }
+        return this.dbAdapter;
     }
 }

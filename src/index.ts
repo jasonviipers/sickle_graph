@@ -9,6 +9,7 @@ import { ResearchAssistantAction } from "./actions/research-assistant";
 import { SickleGraphService } from "./services/sickle-graph-service";
 import { SickleGraphRoutes } from "./routes";
 import { character, initCharacter } from "./character/sicklegraph-agent";
+import { NCBIService } from './services/ncbi-service';
 
 
 /**
@@ -19,15 +20,22 @@ export const SickleGraphPlugin: Plugin = {
   description: 'Biomedical knowledge graph for gene therapy research',
 
   actions: [ResearchAssistantAction],
-  services: [SickleGraphService],
+  services: [SickleGraphService, NCBIService],
   routes: SickleGraphRoutes,
 
   init: async (config: Record<string, string>, runtime: IAgentRuntime) => {
-    logger.info('Initializing SickleGraph plugin');
-    // Warm up the service
-    const service = await runtime.getService<SickleGraphService>(
+    // Initialize services
+    await runtime.getService<SickleGraphService>(
       SickleGraphService.serviceType
     );
+    // const sicklegraphService = await runtime.getService<SickleGraphService>(
+    //   SickleGraphService.serviceType
+    // );
+    const ncbiService = await runtime.getService<NCBIService>(
+      NCBIService.serviceType
+    );
+    await ncbiService.initialize();
+
     logger.info('SickleGraph plugin ready');
   },
 }
