@@ -13,7 +13,7 @@
   ],
   "repository": {
     "type": "git",
-    "url": "github:elizaos/plugin-sicklegraph"
+    "url": "github:jasonviipers/plugin-sicklegraph"
   },
   "exports": {
     "./package.json": "./package.json",
@@ -28,7 +28,7 @@
     "dist"
   ],
   "dependencies": {
-    "@elizaos/cli": "beta",
+    "@elizaos/cli": "1.0.0-beta.52",
     "@elizaos/core": "beta",
     "@elizaos/plugin-bootstrap": "^1.0.0-beta.51",
     "@elizaos/plugin-groq": "beta",
