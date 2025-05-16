@@ -1,7 +1,7 @@
 import { IAgentRuntime, logger, Service } from '@elizaos/core';
 import axios, { AxiosInstance } from 'axios';
 import { KuzuAdapter } from '../db/kuzu-adapter';
-import { NCBIOptions, Gene, ResearchPaper, ClinicalVariant } from '../types';
+import { Gene, ResearchPaper, ClinicalVariant } from '../types';
 import { SickleGraphService } from './sickle-graph-service';
 
 export class NCBIService extends Service {
