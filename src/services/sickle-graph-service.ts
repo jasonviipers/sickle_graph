@@ -60,6 +60,8 @@ export class SickleGraphService extends Service {
             await this.dbAdapter.initialize();
             await this.dbAdapter.initializeFullSchema();
 
+            await this.createDatabaseIndexes();
+
             // Reinitialize NCBI service with the actual dbAdapter
             this.ncbiService = new NCBIService(this.runtime);
             this.initialized = true;
@@ -70,7 +72,42 @@ export class SickleGraphService extends Service {
             throw error;
         }
     }
+    /**
+   * Create database indexes for common query patterns
+   */
+    private async createDatabaseIndexes(): Promise<void> {
+        try {
+            logger.info('Creating database indexes for common query patterns');
 
+            // Gene indexes
+            await this.dbAdapter.executeQuery('CREATE INDEX ON Gene(symbol)');
+            await this.dbAdapter.executeQuery('CREATE INDEX ON Gene(name)');
+            await this.dbAdapter.executeQuery('CREATE INDEX ON Gene(description)');
+            await this.dbAdapter.executeQuery('CREATE INDEX ON Gene(chromosome)');
+            await this.dbAdapter.executeQuery('CREATE INDEX ON Gene(id)');
+
+            // Variant indexes
+            await this.dbAdapter.executeQuery('CREATE INDEX ON Variant(id)');
+
+            // ResearchPaper indexes
+            await this.dbAdapter.executeQuery('CREATE INDEX ON ResearchPaper(title)');
+            await this.dbAdapter.executeQuery('CREATE INDEX ON ResearchPaper(journal)');
+            await this.dbAdapter.executeQuery('CREATE INDEX ON ResearchPaper(publicationDate)');
+
+            // ClinicalTrial indexes
+            await this.dbAdapter.executeQuery('CREATE INDEX ON ClinicalTrial(region)');
+            await this.dbAdapter.executeQuery('CREATE INDEX ON ClinicalTrial(status)');
+            await this.dbAdapter.executeQuery('CREATE INDEX ON ClinicalTrial(startDate)');
+
+            // Disease indexes
+            await this.dbAdapter.executeQuery('CREATE INDEX ON Disease(name)');
+
+            logger.info('Database indexes created successfully');
+        } catch (error) {
+            logger.error('Error creating database indexes:', error);
+            throw error;
+        }
+    }
     /**
      * Search genes by symbol, name or description
      */

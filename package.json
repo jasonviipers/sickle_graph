@@ -66,9 +66,9 @@
   "agentConfig": {
     "pluginType": "elizaos:plugin:1.0.0",
     "pluginParameters": {
-      "API_KEY": {
+      "NCBI_API_KEY": {
         "type": "string",
-        "description": "API key for the service"
+        "description": "NCBI API key"
       }
     }
   }
