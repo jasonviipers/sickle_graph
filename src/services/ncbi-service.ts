@@ -1,25 +1,32 @@
-import { logger, Service } from '@elizaos/core';
+import { IAgentRuntime, logger, Service } from '@elizaos/core';
 import axios, { AxiosInstance } from 'axios';
 import { KuzuAdapter } from '../db/kuzu-adapter';
 import { NCBIOptions, Gene, ResearchPaper, ClinicalVariant } from '../types';
+import { SickleGraphService } from './sickle-graph-service';
 
 export class NCBIService extends Service {
     private readonly api: AxiosInstance;
     private readonly apiKey: string;
     private readonly baseUrl: string;
-    private readonly rateLimit: number = 3; // requests per second
+    private readonly rateLimit: number = 3;
     private lastRequestTime: number = 0;
+    private dbAdapter: KuzuAdapter;
 
-    capabilityDescription = "NCBI knowledge graph for biomedical research";
+    static serviceType = "ncbi";
+    capabilityDescription = "NCBI API integration service";
 
-    constructor(
-        private dbAdapter: KuzuAdapter,
-        options?: NCBIOptions
-    ) {
-        super();
-        this.apiKey = options?.apiKey || process.env.NCBI_API_KEY || '';
-        this.baseUrl = options?.baseUrl || 'https://eutils.ncbi.nlm.nih.gov/entrez/eutils';
+    constructor(runtime: IAgentRuntime) {
+        super(runtime);
+        this.config = {
+            KUZU_DB_PATH: runtime.getSetting('KUZU_DB_PATH'),
+            NCBI_API_KEY: runtime.getSetting('NCBI_API_KEY'),
+            NCBI_BASE_URL: runtime.getSetting('NCBI_BASE_URL'),
+            KNOWLEDGE_GRAPH_CACHE_TTL: runtime.getSetting('KNOWLEDGE_GRAPH_CACHE_TTL'),
+        };
+        this.apiKey = this.config.NCBI_API_KEY;
+        this.baseUrl = this.config.NCBI_BASE_URL;
 
+        // Initialize API client
         this.api = axios.create({
             baseURL: this.baseUrl,
             timeout: 10000,
@@ -28,6 +35,28 @@ export class NCBIService extends Service {
                 retmode: 'json'
             }
         });
+
+        // Get shared dbAdapter from SickleGraphService
+        const sicklegraphService = runtime.getService<SickleGraphService>(
+            SickleGraphService.serviceType
+        );
+
+        if (!sicklegraphService) {
+            throw new Error('SickleGraphService not available');
+        }
+
+        this.dbAdapter = sicklegraphService.getDbAdapter();
+    }
+
+    async initialize(): Promise<void> {
+        try {
+            await this.dbAdapter.initialize();
+            await this.dbAdapter.initializeFullSchema();
+            logger.info('NCBI service initialized');
+        } catch (error) {
+            logger.error('Failed to initialize NCBI service:', error);
+            throw error;
+        }
     }
 
     /**

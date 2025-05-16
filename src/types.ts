@@ -1,4 +1,4 @@
-// types.ts
+
 /**
  * Core biomedical types for SickleGraph
  */
