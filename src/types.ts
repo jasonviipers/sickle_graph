@@ -11,6 +11,15 @@ export interface Gene {
     ensemblId?: string;
     location?: string;
     lastUpdated?: string;
+    variants?: Variant[];
+    treatments?: Array<{
+        treatment: {
+            id: string;
+            name: string;
+        };
+        efficacy: number;
+    }>;
+    papers?: ResearchPaper[];
 }
 
 export interface Variant {
@@ -19,6 +28,7 @@ export interface Variant {
     clinicalSignificance: 'pathogenic' | 'likely_pathogenic' | 'vus' | 'likely_benign' | 'benign';
     populationFrequency?: number;
     variantType?: string;
+    geneId?: string;  
 }
 
 export interface ClinicalVariant extends Variant {

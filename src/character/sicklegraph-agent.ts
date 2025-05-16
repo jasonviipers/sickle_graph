@@ -115,7 +115,7 @@ export const character: Character = {
             'Always includes "Key Practice Points" and "Resource-Stratified Options" sections'
         ]
     },
-
+    knowledge: []
 };
 
 export const initCharacter = ({ runtime }: { runtime: IAgentRuntime }) => {

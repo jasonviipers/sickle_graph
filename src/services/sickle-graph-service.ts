@@ -6,6 +6,10 @@ import { GeneQuery, PaperQuery } from "src/environment";
 
 /**
  * Core service for SickleGraph knowledge graph operations
+ * 
+ * This service provides access to a knowledge graph of genetic information,
+ * research papers, clinical trials, and treatments related to sickle cell disease,
+ * with a focus on gene therapy innovation in Africa.
  */
 export class SickleGraphService extends Service {
     private dbAdapter: KuzuAdapter;
@@ -26,7 +30,11 @@ export class SickleGraphService extends Service {
     }
 
     /**
-     * Proper service initialization with database setup
+     * Creates and initializes a new SickleGraphService instance
+     * 
+     * @param runtime - The agent runtime environment
+     * @returns A fully initialized SickleGraphService instance
+     * @throws Error if database initialization fails
      */
     static async create(runtime: IAgentRuntime): Promise<SickleGraphService> {
         const service = new SickleGraphService(runtime);
@@ -35,7 +43,10 @@ export class SickleGraphService extends Service {
     }
 
     /**
-     * Cleanup resources when service is stopped
+     * Cleans up resources when service is stopped
+     * 
+     * @returns A promise that resolves when cleanup is complete
+     * @throws Error if cleanup operations fail
      */
     async stop(): Promise<void> {
         try {
@@ -50,7 +61,16 @@ export class SickleGraphService extends Service {
             throw error;
         }
     }
-
+    
+    /**
+     * Initializes the database connection and schema
+     * 
+     * Sets up the Kuzu graph database connection, initializes the schema,
+     * and creates necessary indexes for optimal query performance.
+     * 
+     * @private
+     * @throws Error if database connection or schema initialization fails
+     */
     private async initializeDatabase(): Promise<void> {
         try {
             this.dbAdapter = new KuzuAdapter({
@@ -108,8 +128,14 @@ export class SickleGraphService extends Service {
             throw error;
         }
     }
+
     /**
-     * Search genes by symbol, name or description
+     * Searches for genes matching the provided query string
+     * 
+     * @param query - Search string to match against gene symbol, name, or description
+     * @param limit - Maximum number of results to return (default: 10)
+     * @returns Array of matching Gene objects
+     * @throws Error if service is not initialized or query fails
      */
     async searchGenes(query: string, limit: number = 10): Promise<Gene[]> {
         if (!this.initialized || !this.dbAdapter) throw new Error('Service not initialized');
@@ -131,7 +157,11 @@ export class SickleGraphService extends Service {
     }
 
     /**
-     * Get gene with related entities
+     * Retrieves detailed information about a specific gene and its relationships
+     * 
+     * @param geneId - Unique identifier of the gene to retrieve
+     * @returns Gene object with related variants, treatments, and research papers
+     * @throws Error if service is not initialized or query fails
      */
     async getGene(geneId: string): Promise<Gene & {
         variants?: Variant[];
