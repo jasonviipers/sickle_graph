@@ -115,7 +115,10 @@ export const character: Character = {
             'Always includes "Key Practice Points" and "Resource-Stratified Options" sections'
         ]
     },
-    knowledge: []
+    knowledge: [
+        "Sickle cell disease affects approximately 300,000 newborns annually in Africa",
+        "The HBB gene variant HbS is the primary genetic cause of sickle cell disease",
+        "Gene therapy trials for SCD are currently active in Ghana, Nigeria, and South Africa"]
 };
 
 export const initCharacter = ({ runtime }: { runtime: IAgentRuntime }) => {
