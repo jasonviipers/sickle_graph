@@ -12,21 +12,22 @@ export const SickleGraphRoutes: Route[] = [
             const service = req.runtime.getService('sicklegraph') as SickleGraphService;
             const query = req.query.q as string;
             const limit = parseInt(req.query.limit as string) || 10;
-            
+
             try {
                 const results = await service?.searchGenes(query, limit);
                 res.json(results);
             } catch (error) {
                 res.status(500).json({ error: error.message });
             }
-        }
+        },
+        name: ""
     },
     {
         path: '/genes/:id',
         type: 'GET',
         handler: async (req, res) => {
             const service = req.runtime.getService('sicklegraph') as SickleGraphService;
-            
+
             try {
                 const gene = await service?.getGene(req.params.id);
                 if (!gene) {
@@ -36,7 +37,8 @@ export const SickleGraphRoutes: Route[] = [
             } catch (error) {
                 res.status(500).json({ error: error.message });
             }
-        }
+        },
+        name: ""
     },
     {
         path: '/variants/:id/trials',
@@ -44,14 +46,15 @@ export const SickleGraphRoutes: Route[] = [
         handler: async (req, res) => {
             const service = req.runtime.getService('sicklegraph') as SickleGraphService;;
             const region = req.query.region as string || 'Africa';
-            
+
             try {
-                const trials = await service?.findTrialsForVariant(req.params.id, region);              
+                const trials = await service?.findTrialsForVariant(req.params.id, region);
                 res.json(trials);
             } catch (error) {
                 res.status(500).json({ error: error.message });
             }
-        }
+        },
+        name: ""
     },
     {
         path: '/data/import',
@@ -59,11 +62,11 @@ export const SickleGraphRoutes: Route[] = [
         handler: async (req, res) => {
             const service = req.runtime.getService('sicklegraph') as SickleGraphService;;
             const { type, data } = req.body;
-            
+
             if (!type || !data) {
                 return res.status(400).json({ error: 'Missing type or data' });
             }
-            
+
             try {
                 switch (type) {
                     case 'genes':
@@ -73,11 +76,12 @@ export const SickleGraphRoutes: Route[] = [
                     default:
                         return res.status(400).json({ error: 'Invalid data type' });
                 }
-                
+
                 res.json({ status: 'success' });
             } catch (error) {
                 res.status(500).json({ error: error.message });
             }
-        }
+        },
+        name: ""
     }
 ];

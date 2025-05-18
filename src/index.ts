@@ -25,9 +25,10 @@ export const SickleGraphPlugin: Plugin = {
   init: async (config: Record<string, string>, runtime: IAgentRuntime) => {
     logger.info('Initializing SickleGraph plugin');
     // Warm up the service
-    const service = await runtime.getService<SickleGraphService>(
-      SickleGraphService.serviceType
-    );
+    //  await runtime.getService<SickleGraphService>(
+    //   SickleGraphService.serviceType
+    // );
+    
     logger.info('SickleGraph plugin ready');
   },
 }
