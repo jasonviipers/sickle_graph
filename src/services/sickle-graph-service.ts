@@ -1,5 +1,5 @@
 import { IAgentRuntime, logger, Service } from "@elizaos/core";
-import { KuzuAdapter } from "../db/kuzu-adapter";
+import { Neo4jAdapter } from "../db/kuzu-adapter";
 import { ClinicalTrial, Gene, ResearchPaper, Variant } from "../types";
 import { NCBIService } from "./ncbi-service";
 
@@ -7,7 +7,7 @@ import { NCBIService } from "./ncbi-service";
  * Core service for SickleGraph knowledge graph operations
  */
 export class SickleGraphService extends Service {
-    private dbAdapter: KuzuAdapter;
+    private dbAdapter: Neo4jAdapter;
     private initialized: boolean = false;
     private ncbiService: NCBIService;
 
@@ -47,12 +47,12 @@ export class SickleGraphService extends Service {
 
     private async initializeDatabase(): Promise<void> {
         try {
-            this.dbAdapter = new KuzuAdapter({
+            this.dbAdapter = new Neo4jAdapter({
                 KUZU_DB_PATH: process.env.KUZU_DB_PATH || './data/sicklegraph.db'
             });
 
             await this.dbAdapter.initialize();
-            await this.dbAdapter.initializeFullSchema();
+            await this.dbAdapter.initializeSchema();
 
              // Reinitialize NCBI service with the actual dbAdapter
              this.ncbiService = new NCBIService(this.dbAdapter);

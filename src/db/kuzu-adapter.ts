@@ -4,6 +4,9 @@ import { KnowledgeGraphResult, Gene, Variant, ClinicalTrial, ResearchPaper } fro
 import { envSchema, GeneQuery, PaperQuery, type Env } from '../environment';
 
 export class Neo4jAdapter {
+  importGeneData(csvData: string) {
+      throw new Error("Method not implemented.");
+  }
   private driver: Driver | null = null;
   private config: Env;
   private queryCache: Map<string, { result: any, timestamp: number }> = new Map();
